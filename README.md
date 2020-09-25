@@ -1,4 +1,4 @@
-# myrepo1
+# 2020_parksBees_data_and_analysis
 
 Repository for data and analysis files backup corresponding to field work from summer 2020.
 
