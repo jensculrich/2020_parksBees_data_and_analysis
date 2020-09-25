@@ -11,4 +11,4 @@ Preliminary work has been done in R (floral_abundance_and_land_v_insects.R) to r
 
 ![](https://64.media.tumblr.com/7e2640054d506699873234becee9ab9c/tumblr_pkffwiVXOu1qze3hdo1_500.gifv)
 
-pixel art from ![1041uuu](https://1041uuu.tumblr.com/)
+pixel art from [1041uuu](https://1041uuu.tumblr.com/)
