@@ -72,10 +72,13 @@ df_parks_subset_august <- merged_df_summarised_3 %>%
   filter(management == "ReducedPark" | management == "ControlPark") %>%
   filter(month == "august")
 
+# use Welch two sample t-test to compare the means of abundance
 t.test(flowers_per_sq_m ~ management, data = df_parks_subset_july)
 # there are more flowers/m^2 in reduced management parks in july
 t.test(flowers_per_sq_m ~ management, data = df_parks_subset_august)
 # there is no difference in flowers/m^2 between mangement approaches in august
+
+# use Welch two sample t-test to compare the means of species richness
 t.test(floral_richness ~ management, data = df_parks_subset_july)
 t.test(floral_richness ~ management, data = df_parks_subset_august)
 # there is a higher richness of flowering species near 
