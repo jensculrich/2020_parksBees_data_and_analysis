@@ -34,7 +34,8 @@ merged_df_summarised_2 <- merged_df_2 %>%
 # plot floral species richness my month|site
 Q <- ggplot(merged_df_summarised_2, 
             aes(x = management, y = floral_richness)) +
-  geom_boxplot(aes(fill = forcats::fct_rev(month)))
+  geom_boxplot(aes(fill = forcats::fct_rev(month))) +
+  theme_classic()
 Q
 
 
@@ -58,8 +59,23 @@ merged_df_summarised_3 <- merged_df_summarised_2 %>%
 # plot floral abundance my month|site
 P <- ggplot(merged_df_summarised_3, 
             aes(x = management, y = flowers_per_sq_m, fill = month)) +
-  geom_boxplot()
+  geom_boxplot() +
+  theme_classic()
 P
+
+# use a two-sample t-test to compare flowers per sq m in reduced v control parks
+# first filter out the agricultural and semi nat sites
+df_parks_subset_july <- merged_df_summarised_3 %>%
+  filter(management == "ReducedPark" | management == "ControlPark") %>%
+  filter(month == "july")
+df_parks_subset_august <- merged_df_summarised_3 %>%
+  filter(management == "ReducedPark" | management == "ControlPark") %>%
+  filter(month == "august")
+
+t.test(flowers_per_sq_m ~ management, data = df_parks_subset_july)
+t.test(flowers_per_sq_m ~ management, data = df_parks_subset_august)
+t.test(floral_richness ~ management, data = df_parks_subset_july)
+t.test(floral_richness ~ management, data = df_parks_subset_august)
 
 # edit or simulate: China creek Park, everett crowley park, campbell rd july.
 
