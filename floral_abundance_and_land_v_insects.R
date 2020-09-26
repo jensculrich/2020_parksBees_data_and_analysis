@@ -73,9 +73,16 @@ df_parks_subset_august <- merged_df_summarised_3 %>%
   filter(month == "august")
 
 t.test(flowers_per_sq_m ~ management, data = df_parks_subset_july)
+# there are more flowers/m^2 in reduced management parks in july
 t.test(flowers_per_sq_m ~ management, data = df_parks_subset_august)
+# there is no difference in flowers/m^2 between mangement approaches in august
 t.test(floral_richness ~ management, data = df_parks_subset_july)
 t.test(floral_richness ~ management, data = df_parks_subset_august)
+# there is a higher richness of flowering species near 
+# the survey location at reduced management parks 
+# in july and also in august
 
-# edit or simulate: China creek Park, everett crowley park, campbell rd july.
+# edit or simulate: China creek Park (july: counted 1/3 plots in the pollinator garden),
+# everett crowley park (july and august: counted plots in pollinator garden), 
+# campbell rd (july: did not visit).
 
