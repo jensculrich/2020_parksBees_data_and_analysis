@@ -3,6 +3,7 @@ library(tidyverse)
 # load data
 floral_data <- read.csv("floral_abundances.csv")
 site_gps_data <- read.csv("all_sites_2020.csv")
+# pollinator_data <- read.csv("")
 
 # merge floral data and site data tables by site name
 merged_df <- (floral_data %>% full_join(site_gps_data))
@@ -29,7 +30,12 @@ merged_df_summarised_2 <- merged_df_2 %>%
   # count number of rows to get floral species richness
   add_count() %>%
   # add a more descriptive column name
-  rename(floral_richness = n)
+  rename(floral_richness = n) %>%
+  # remove this site until decide what to do with it
+  # everett_crowley is a pollinator garden, very different from 
+  # a typical park and not necessarily reduced management but instead
+  # active flowering planting management.
+  filter(site != "everett_crowley_park")
 
 # plot floral species richness my month|site
 Q <- ggplot(merged_df_summarised_2, 
@@ -37,6 +43,14 @@ Q <- ggplot(merged_df_summarised_2,
   geom_boxplot(aes(fill = forcats::fct_rev(month))) +
   theme_classic()
 Q
+
+# plot floral species richness my month|site for parks only
+Q2 <- ggplot(filter(merged_df_summarised_3, 
+                    management == "ReducedPark" | management == "ControlPark"), 
+            aes(x = management, y = floral_richness)) +
+  geom_boxplot(aes(fill = forcats::fct_rev(month))) +
+  theme_classic()
+Q2
 
 
 # calculate sum of all floral units per site per month
@@ -49,19 +63,22 @@ merged_df_summarised_3 <- merged_df_summarised_2 %>%
   mutate(number_floral_units = na_if(number_floral_units, -1)) %>%
   # surveyed 15 plots so divide by 15 to get per m^2 value
   mutate(flowers_per_sq_m = 
-           sum(number_floral_units)/15) %>%
-  # remove this site until decide what to do with it
-  # everett_crowley is a pollinator garden, very different from 
-  # a typical park and not necessarily reduced management but instead
-  # active flowering planting management.
-  filter(site != "everett_crowley_park")
+           sum(number_floral_units)/15)
 
-# plot floral abundance my month|site
+# plot floral abundance by month|site
 P <- ggplot(merged_df_summarised_3, 
             aes(x = management, y = flowers_per_sq_m, fill = month)) +
-  geom_boxplot() +
+  geom_boxplot(aes(fill = forcats::fct_rev(month))) +
   theme_classic()
 P
+
+# plot floral abundance by month|site for parks only
+P2 <- ggplot(filter(merged_df_summarised_3, 
+                    management == "ReducedPark" | management == "ControlPark"), 
+            aes(x = management, y = flowers_per_sq_m, fill = month)) +
+  geom_boxplot(aes(fill = forcats::fct_rev(month))) +
+  theme_classic()
+P2
 
 # use a two-sample t-test to compare flowers per sq m in reduced v control parks
 # first filter out the agricultural and semi nat sites
