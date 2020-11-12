@@ -3,7 +3,7 @@ library(tidyverse)
 # load data
 floral_data <- read.csv("floral_abundances.csv")
 site_gps_data <- read.csv("all_sites_2020.csv")
-# pollinator_data <- read.csv("")
+pollinator_data <- read.csv("all_sites_2020_labels_expanded.csv")
 
 # merge floral data and site data tables by site name
 merged_df <- (floral_data %>% full_join(site_gps_data))
@@ -105,4 +105,21 @@ t.test(floral_richness ~ management, data = df_parks_subset_august)
 # edit or simulate: China creek Park (july: counted 1/3 plots in the pollinator garden),
 # everett crowley park (july and august: counted plots in pollinator garden), 
 # campbell rd (july: did not visit).
+
+# group merged_df_summarised_3 by site and month to have 
+# one row per site / month, while retaining management,
+# and overall floral abundance and richness metrics 
+merged_df_summarised_4 <- merged_df_summarised_3 %>%
+  group_by(site, month, management) %>%
+  summarise(floral_richness = mean(floral_richness),
+            flowers_per_sq_m = mean(flowers_per_sq_m))
+
+# clean pollinator data before merge
+pollinator_data_2 <- pollinator_data %>%
+  slice(261:1439) %>% # remove ubc farm dates in may and june
+  filter(plant_or_pans == "pan trap") # filter out hand netted specimens (from ubc farm) 
+  # add a month column for pollinator data july for first half of matrix, august after
+  # remember that the last four rows are actually late adds
+
+View(merged_df_pollinators <- (pollinator_data %>% full_join(merged_df_summarised_4)))
 
