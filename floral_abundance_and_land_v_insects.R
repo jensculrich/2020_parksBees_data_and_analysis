@@ -3,7 +3,7 @@ library(tidyverse)
 # load data
 floral_data <- read.csv("floral_abundances.csv")
 site_gps_data <- read.csv("all_sites_2020.csv")
-pollinator_data <- read.csv("all_sites_2020_labels_expanded.csv")
+pollinator_data <- read.csv("all_sites_2020_labels_expanded.csv", na.strings=c(""," ","NA"))
 
 # merge floral data and site data tables by site name
 merged_df <- (floral_data %>% full_join(site_gps_data))
@@ -116,10 +116,56 @@ merged_df_summarised_4 <- merged_df_summarised_3 %>%
 
 # clean pollinator data before merge
 pollinator_data_2 <- pollinator_data %>%
-  slice(261:1439) %>% # remove ubc farm dates in may and june
-  filter(plant_or_pans == "pan trap") # filter out hand netted specimens (from ubc farm) 
+  slice(262:1439) %>% # remove ubc farm dates in may and june
+  filter(plant_or_pans == "pan trap") %>% # filter out hand netted specimens (from ubc farm) 
+  drop_na(order) %>% # filter out rows where order is.na  
+  mutate(month = ifelse(row_number() %in% 1:214, "july", "august"))
+  
   # add a month column for pollinator data july for first half of matrix, august after
   # remember that the last four rows are actually late adds
 
-View(merged_df_pollinators <- (pollinator_data %>% full_join(merged_df_summarised_4)))
+# join by site and month to add management and floral data to pollinator observations
+merged_df_pollinators <- (pollinator_data_2 %>% 
+                            left_join(merged_df_summarised_4))
 
+# calculate overall bee abundance per month|site
+merged_df_pollinators <- merged_df_pollinators %>%  
+  group_by(site, month) %>%
+  add_count() %>%
+  # add a more descriptive column name
+  rename(bee_abundance = n) %>%
+  # remove this site until decide what to do with it
+  # everett_crowley is a pollinator garden, very different from 
+  # a typical park and not necessarily reduced management but instead
+  # active flowering planting management.
+  filter(site != "everett_crowley_park")
+
+# plot floral abundance by month|site
+R <- ggplot(merged_df_pollinators, 
+            aes(x = management, y = bee_abundance, fill = month)) +
+  geom_boxplot(aes(fill = forcats::fct_rev(month))) +
+  theme_classic()
+R
+
+# plot floral abundance by month|site for parks only
+R2 <- ggplot(filter(merged_df_pollinators, 
+                    management == "ReducedPark" | management == "ControlPark"), 
+             aes(x = management, y = bee_abundance, fill = month)) +
+  geom_boxplot(aes(fill = forcats::fct_rev(month))) +
+  theme_classic()
+R2
+
+# use Welch two sample t-test to compare the means of abundance
+merged_df_pollinators_july <- merged_df_pollinators %>% 
+  filter(management == "ControlPark" | management == "ReducedPark") %>%
+  filter(month == "july")  
+  
+  t.test(bee_abundance ~ management, data = merged_df_pollinators_july)
+  # there are more bees per site in reduced management parks in july
+
+merged_df_pollinators_august <- merged_df_pollinators %>% 
+  filter(management == "ControlPark" | management == "ReducedPark") %>%
+  filter(month == "august")  
+  
+  t.test(bee_abundance ~ management, data = merged_df_pollinators_august)
+  # there are more bees per site in reduced management parks in august
