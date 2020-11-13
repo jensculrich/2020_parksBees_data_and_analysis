@@ -129,8 +129,9 @@ merged_df_pollinators <- (pollinator_data_2 %>%
                             left_join(merged_df_summarised_4))
 
 # calculate overall bee abundance per month|site
-merged_df_pollinators <- merged_df_pollinators %>%  
-  group_by(site, month) %>%
+merged_df_pollinators_bees_only <- merged_df_pollinators %>%  
+  filter(subclade == "Anthophila") %>% # filter for bees only
+  group_by(index) %>%
   add_count() %>%
   # add a more descriptive column name
   rename(bee_abundance = n) %>%
@@ -138,34 +139,66 @@ merged_df_pollinators <- merged_df_pollinators %>%
   # everett_crowley is a pollinator garden, very different from 
   # a typical park and not necessarily reduced management but instead
   # active flowering planting management.
-  filter(site != "everett_crowley_park")
+  filter(site != "everett_crowley_park") %>%
+  filter(site != "china_creek_north_park")
+  
 
-# plot floral abundance by month|site
-R <- ggplot(merged_df_pollinators, 
+# plot bee abundance by month|site
+R <- ggplot(merged_df_pollinators_bees_only, 
             aes(x = management, y = bee_abundance, fill = month)) +
   geom_boxplot(aes(fill = forcats::fct_rev(month))) +
   theme_classic()
 R
 
-# plot floral abundance by month|site for parks only
-R2 <- ggplot(filter(merged_df_pollinators, 
+# plot bee abundance by month|site for parks only
+R2 <- ggplot(filter(merged_df_pollinators_bees_only, 
                     management == "ReducedPark" | management == "ControlPark"), 
              aes(x = management, y = bee_abundance, fill = month)) +
   geom_boxplot(aes(fill = forcats::fct_rev(month))) +
   theme_classic()
 R2
 
+# plot bee abundance by flowers per sq m
+R3 <- ggplot(filter(merged_df_pollinators_bees_only, 
+                    management == "ReducedPark" | management == "ControlPark"), 
+             aes(x = flowers_per_sq_m, y = bee_abundance)) +
+  geom_point(aes(colour = management, shape = month, size = 5)) +
+  geom_smooth(method = lm, formula = y ~ splines::bs(x, 3)) +
+  theme_classic()
+R3
+
 # use Welch two sample t-test to compare the means of abundance
-merged_df_pollinators_july <- merged_df_pollinators %>% 
+merged_df_pollinators_bees_only_july <- merged_df_pollinators_bees_only %>% 
   filter(management == "ControlPark" | management == "ReducedPark") %>%
   filter(month == "july")  
   
-  t.test(bee_abundance ~ management, data = merged_df_pollinators_july)
+  t.test(bee_abundance ~ management, data = merged_df_pollinators_bees_only_july)
   # there are more bees per site in reduced management parks in july
 
-merged_df_pollinators_august <- merged_df_pollinators %>% 
+merged_df_pollinators_bees_only_august <- merged_df_pollinators_bees_only %>% 
   filter(management == "ControlPark" | management == "ReducedPark") %>%
   filter(month == "august")  
   
-  t.test(bee_abundance ~ management, data = merged_df_pollinators_august)
+  t.test(bee_abundance ~ management, data = merged_df_pollinators_bees_only_august)
   # there are more bees per site in reduced management parks in august
+
+# repeat with fly data  
+merged_df_pollinators_syrphid_only <- merged_df_pollinators %>%  
+  filter(family == "Syrphidae") %>% # filter for bees only
+  group_by(index) %>%
+  add_count() %>%
+  # add a more descriptive column name
+  rename(syrphid_abundance = n) %>%
+  # remove this site until decide what to do with it
+  # everett_crowley is a pollinator garden, very different from 
+  # a typical park and not necessarily reduced management but instead
+  # active flowering planting management.
+  filter(site != "everett_crowley_park") %>%
+  filter(site != "china_creek_north_park")
+
+# plot syrphid fly abundance by month|site
+S <- ggplot(merged_df_pollinators_syrphid_only, 
+            aes(x = management, y = syrphid_abundance, fill = month)) +
+  geom_boxplot(aes(fill = forcats::fct_rev(month))) +
+  theme_classic()
+S
