@@ -145,8 +145,12 @@ pollinator_data_2 <- pollinator_data %>%
   # remember that the last four rows are actually late adds
 
 # join by site and month to add management and floral data to pollinator observations
-merged_df_pollinators <- (pollinator_data_2 %>% 
-                            left_join(merged_df_summarised_4))
+# reorder factor for figures with parks on the left
+merged_df_pollinators <- pollinator_data_2 %>% 
+                            left_join(merged_df_summarised_4) %>%
+  mutate(management = fct_relevel(management, 
+                            "ControlPark", "ReducedPark", 
+                            "Agricultural", "SemiNatural"))
 
 # calculate overall bee abundance per month|site
 merged_df_pollinators_bees_only <- merged_df_pollinators %>%  
@@ -167,7 +171,19 @@ merged_df_pollinators_bees_only <- merged_df_pollinators %>%
 R <- ggplot(merged_df_pollinators_bees_only, 
             aes(x = management, y = bee_abundance, fill = month)) +
   geom_boxplot(aes(fill = forcats::fct_rev(month))) +
-  theme_classic()
+  theme_classic() +
+  xlab("") + ylab("Bee Abundance") +
+  scale_x_discrete(breaks=c("Agricultural", "ControlPark", 
+                            "ReducedPark", "SemiNatural"),
+                   labels=c("Agricultural", "Control Park", 
+                            "Treatment Park", "Semi-natural")) +
+  theme(axis.text.x = element_text(size = 12)) +
+  theme(axis.text.y = element_text(size = 12)) + 
+  theme(axis.title.y = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 14)) +
+  scale_fill_discrete(breaks=c("july", "august"),
+                      labels=c("July", "August")) +
+  theme(legend.title=element_blank())
 R
 
 # plot bee abundance by month|site for parks only
@@ -213,7 +229,18 @@ R4 <- ggplot(parks_bees,
               method = "lm", se = FALSE, color = "#00BFC4") +
   geom_smooth(data = subset(parks_bees, management == "ControlPark"), 
               method = "lm", se = FALSE, color = "#F8766D") +
-  theme_classic()
+  theme_classic() +
+  ylab("log(Bee Abundance)") + xlab(bquote("log(Floral Units / m" ^2~ ")")) +
+  theme(axis.text.x = element_text(size = 12)) +
+  theme(axis.text.y = element_text(size = 12)) + 
+  theme(axis.title.x = element_text(size = 14)) +
+  theme(axis.title.y = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 14)) +
+  scale_colour_discrete(breaks=c("ControlPark", "ReducedPark"),
+                      labels=c("Control Park", "Treatment Park")) +
+  scale_shape_discrete(breaks=c("july", "august"),
+                        labels=c("July", "August")) +
+  theme(legend.title=element_blank())
 R4
 
 hist(parks_bees$bee_abundance, main = "", breaks = 100, col = "grey", border = "grey")
@@ -255,7 +282,19 @@ merged_df_pollinators_syrphid_only <- merged_df_pollinators %>%
 S <- ggplot(merged_df_pollinators_syrphid_only, 
             aes(x = management, y = syrphid_abundance, fill = month)) +
   geom_boxplot(aes(fill = forcats::fct_rev(month))) +
-  theme_classic()
+  theme_classic() +
+  xlab("") + ylab("Syrphid Fly Abundance") +
+  scale_x_discrete(breaks=c("Agricultural", "ControlPark", 
+                            "ReducedPark", "SemiNatural"),
+                   labels=c("Agricultural", "Control Park", 
+                            "Treatment Park", "Semi-natural")) +
+  theme(axis.text.x = element_text(size = 12)) +
+  theme(axis.text.y = element_text(size = 12)) + 
+  theme(axis.title.y = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 14)) +
+  scale_fill_discrete(breaks=c("july", "august"),
+                      labels=c("July", "August")) +
+  theme(legend.title=element_blank())
 S
 
 # calculate overall wasp abundance per month|site
@@ -283,6 +322,18 @@ T <- ggplot(merged_df_pollinators_wasps_only,
             aes(x = management, y = wasp_type_abundance, fill = month)) +
   geom_boxplot(aes(fill = forcats::fct_rev(month))) +
   facet_wrap(~is_Vespidae) +
-  theme_classic()
+  theme_classic() +
+  xlab("") + ylab("Wasp Abundance") +
+  scale_x_discrete(breaks=c("Agricultural", "ControlPark", 
+                            "ReducedPark", "SemiNatural"),
+                   labels=c("Agricultural", "Control Park", 
+                            "Treatment Park", "Semi-natural")) +
+  theme(axis.text.x = element_text(size = 12)) +
+  theme(axis.text.y = element_text(size = 12)) + 
+  theme(axis.title.y = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 14)) +
+  scale_fill_discrete(breaks=c("july", "august"),
+                      labels=c("July", "August")) +
+  theme(legend.title=element_blank())
 T
 
