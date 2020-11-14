@@ -139,7 +139,7 @@ pollinator_data_2 <- pollinator_data %>%
   slice(262:1439) %>% # remove ubc farm dates in may and june
   filter(plant_or_pans == "pan trap") %>% # filter out hand netted specimens (from ubc farm) 
   drop_na(order) %>% # filter out rows where order is.na  
-  mutate(month = ifelse(row_number() %in% 1:214, "july", "august"))
+  mutate(month = ifelse(row_number() %in% 1:318, "july", "august"))
   
   # add a month column for pollinator data july for first half of matrix, august after
   # remember that the last four rows are actually late adds
