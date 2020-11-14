@@ -49,7 +49,17 @@ Q2 <- ggplot(filter(merged_df_summarised_3,
                     management == "ReducedPark" | management == "ControlPark"), 
             aes(x = management, y = floral_richness)) +
   geom_boxplot(aes(fill = forcats::fct_rev(month))) +
-  theme_classic()
+  theme_classic() +
+  xlab("") + ylab("Flowering Plant Species Richness") +
+  scale_x_discrete(breaks=c("ControlPark", "ReducedPark"),
+                   labels=c("Control Park", "Treatment Park")) +
+  theme(axis.text.x = element_text(size = 14)) +
+  theme(axis.text.y = element_text(size = 12)) + 
+  theme(axis.title.y = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 14)) +
+  scale_fill_discrete(breaks=c("july", "august"),
+                      labels=c("July", "August")) +
+  theme(legend.title=element_blank())
 Q2
 
 
@@ -77,7 +87,17 @@ P2 <- ggplot(filter(merged_df_summarised_3,
                     management == "ReducedPark" | management == "ControlPark"), 
             aes(x = management, y = flowers_per_sq_m, fill = month)) +
   geom_boxplot(aes(fill = forcats::fct_rev(month))) +
-  theme_classic()
+  theme_classic() +
+  xlab("") + ylab(bquote("Floral Units / m" ^2)) +
+  scale_x_discrete(breaks=c("ControlPark", "ReducedPark"),
+                   labels=c("Control Park", "Treatment Park")) +
+  theme(axis.text.x = element_text(size = 14)) +
+  theme(axis.text.y = element_text(size = 12)) + 
+  theme(axis.title.y = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 14)) +
+  scale_fill_discrete(breaks=c("july", "august"),
+                      labels=c("July", "August")) +
+  theme(legend.title=element_blank())
 P2
 
 # use a two-sample t-test to compare flowers per sq m in reduced v control parks
@@ -182,12 +202,17 @@ log_log_abundance_mixed_model <- lme4::lmer(data = parks_bees,
                                 (1|management))
 summary(log_log_abundance_mixed_model)
 anova(log_log_abundance_mixed_model, log_log_abundance_model)
+# including management as a random effect significantly improves model fit
 
 # plot bee abundance by flowers per sq m as a log log
 R4 <- ggplot(parks_bees, 
              aes(x = log(flowers_per_sq_m), y = log(bee_abundance))) +
   geom_point(aes(colour = management, shape = month), size = 5) +
-  geom_smooth(method = "lm", se = FALSE) +
+  # replot with seperate lm's for management types
+  geom_smooth(data = subset(parks_bees, management == "ReducedPark"), 
+              method = "lm", se = FALSE, color = "#00BFC4") +
+  geom_smooth(data = subset(parks_bees, management == "ControlPark"), 
+              method = "lm", se = FALSE, color = "#F8766D") +
   theme_classic()
 R4
 
