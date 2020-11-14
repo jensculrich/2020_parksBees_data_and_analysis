@@ -167,16 +167,35 @@ R3 <- ggplot(filter(merged_df_pollinators_bees_only,
   theme_classic()
 R3
 
+# filter df for parks only
+parks_bees <- filter(merged_df_pollinators_bees_only, 
+       management == "ReducedPark" | management == "ControlPark")
+
 # fit linear regression for log transformed data
+log_log_abundance_model <- lm(data = parks_bees, 
+                              log(bee_abundance) ~ log(flowers_per_sq_m))
+summary(log_log_abundance_model)
+
+# fit linear regression for log transformed data w random effect
+log_log_abundance_mixed_model <- lme4::lmer(data = parks_bees, 
+                              log(bee_abundance) ~ log(flowers_per_sq_m) + 
+                                (1|management))
+summary(log_log_abundance_mixed_model)
+anova(log_log_abundance_mixed_model, log_log_abundance_model)
 
 # plot bee abundance by flowers per sq m as a log log
-R4 <- ggplot(filter(merged_df_pollinators_bees_only, 
-                    management == "ReducedPark" | management == "ControlPark"), 
+R4 <- ggplot(parks_bees, 
              aes(x = log(flowers_per_sq_m), y = log(bee_abundance))) +
   geom_point(aes(colour = management, shape = month), size = 5) +
-  # geom_line() +
+  geom_smooth(method = "lm", se = FALSE) +
   theme_classic()
 R4
+
+hist(parks_bees$bee_abundance, main = "", breaks = 100, col = "grey", border = "grey")
+hist(log(parks_bees$bee_abundance), main = "", breaks = 50, col = "grey", border = "grey")
+abline(v = log(mean(parks_bees$bee_abundance)), col = "red", lwd = 2)   
+abline(v = mean(log(parks_bees$bee_abundance)), col = "blue", lwd = 2)
+
 
 # use Welch two sample t-test to compare the means of abundance
 merged_df_pollinators_bees_only_july <- merged_df_pollinators_bees_only %>% 
