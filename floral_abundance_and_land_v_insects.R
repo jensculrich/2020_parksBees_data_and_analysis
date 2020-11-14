@@ -162,10 +162,21 @@ R2
 R3 <- ggplot(filter(merged_df_pollinators_bees_only, 
                     management == "ReducedPark" | management == "ControlPark"), 
              aes(x = flowers_per_sq_m, y = bee_abundance)) +
-  geom_point(aes(colour = management, shape = month, size = 5)) +
+  geom_point(aes(colour = management, shape = month), size = 5) +
   geom_smooth(method = lm, formula = y ~ splines::bs(x, 3)) +
   theme_classic()
 R3
+
+# fit linear regression for log transformed data
+
+# plot bee abundance by flowers per sq m as a log log
+R4 <- ggplot(filter(merged_df_pollinators_bees_only, 
+                    management == "ReducedPark" | management == "ControlPark"), 
+             aes(x = log(flowers_per_sq_m), y = log(bee_abundance))) +
+  geom_point(aes(colour = management, shape = month), size = 5) +
+  # geom_line() +
+  theme_classic()
+R4
 
 # use Welch two sample t-test to compare the means of abundance
 merged_df_pollinators_bees_only_july <- merged_df_pollinators_bees_only %>% 
@@ -202,3 +213,32 @@ S <- ggplot(merged_df_pollinators_syrphid_only,
   geom_boxplot(aes(fill = forcats::fct_rev(month))) +
   theme_classic()
 S
+
+# calculate overall wasp abundance per month|site
+merged_df_pollinators_wasps_only <- merged_df_pollinators %>%  
+  filter(subclade == "not_Anthophila") %>% # filter for non-bee wasps only
+  group_by(index) %>%
+  add_count() %>%
+  # add a more descriptive column name
+  rename(total_wasp_abundance = n) %>%
+  # add column 1 if family is Vespidae or 0 if not Vespidae 
+  mutate(is_Vespidae = ifelse(family == "Vespidae", "Vespidae", "other Hymenoptera")) %>%
+  # remove this site until decide what to do with it
+  # everett_crowley is a pollinator garden, very different from 
+  # a typical park and not necessarily reduced management but instead
+  # active flowering planting management.
+  group_by(index, is_Vespidae) %>%
+  add_count() %>%
+  # add a more descriptive column name
+  rename(wasp_type_abundance = n) %>%
+  filter(site != "everett_crowley_park") %>%
+  filter(site != "china_creek_north_park")
+
+# plot wasp fly abundance by month|site
+T <- ggplot(merged_df_pollinators_wasps_only, 
+            aes(x = management, y = wasp_type_abundance, fill = month)) +
+  geom_boxplot(aes(fill = forcats::fct_rev(month))) +
+  facet_wrap(~is_Vespidae) +
+  theme_classic()
+T
+
