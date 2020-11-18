@@ -31,11 +31,13 @@ merged_df_summarised_2 <- merged_df_2 %>%
   add_count() %>%
   # add a more descriptive column name
   rename(floral_richness = n) %>%
-  # remove this site until decide what to do with it
-  # everett_crowley is a pollinator garden, very different from 
-  # a typical park and not necessarily reduced management but instead
-  # active flowering planting management.
-  filter(site != "everett_crowley_park")
+  # remove these sites until decide what to do with it
+  # everett_crowley and china_creek_north_park
+  # are pollinator gardens, very different from 
+  # a typical park and not necessarily reduced management but 
+  # instead active flowering planting management.
+  filter(site != "everett_crowley_park") %>% 
+  filter(site != "china_creek_north_park")
 
 # plot floral species richness my month|site
 Q <- ggplot(merged_df_summarised_2, 
@@ -45,7 +47,7 @@ Q <- ggplot(merged_df_summarised_2,
 Q
 
 # plot floral species richness my month|site for parks only
-Q2 <- ggplot(filter(merged_df_summarised_3, 
+Q2 <- ggplot(filter(merged_df_summarised_2, 
                     management == "ReducedPark" | management == "ControlPark"), 
             aes(x = management, y = floral_richness)) +
   geom_boxplot(aes(fill = forcats::fct_rev(month))) +
@@ -62,11 +64,11 @@ Q2 <- ggplot(filter(merged_df_summarised_3,
   theme(legend.title=element_blank())
 Q2
 
-
 # calculate sum of all floral units per site per month
 # a value of -1 for number_floral_units represents absent
 # from sytematically placed plots but present at the site.
-# so do not want to include rows where number of floral units = -1.
+# so do not want to include rows where number of floral units = -1
+# in the floral unit density summary metric.
 merged_df_summarised_3 <- merged_df_summarised_2 %>%
   group_by(site, month) %>%
   filter(number_floral_units > -1) %>%
@@ -140,7 +142,6 @@ pollinator_data_2 <- pollinator_data %>%
   filter(plant_or_pans == "pan trap") %>% # filter out hand netted specimens (from ubc farm) 
   drop_na(order) %>% # filter out rows where order is.na  
   mutate(month = ifelse(row_number() %in% 1:318, "july", "august"))
-  
   # add a month column for pollinator data july for first half of matrix, august after
   # remember that the last four rows are actually late adds
 
@@ -195,6 +196,7 @@ R2 <- ggplot(filter(merged_df_pollinators_bees_only,
 R2
 
 # plot bee abundance by flowers per sq m
+# retry below (plot R4) as log transformed w and w/out random effects
 R3 <- ggplot(filter(merged_df_pollinators_bees_only, 
                     management == "ReducedPark" | management == "ControlPark"), 
              aes(x = flowers_per_sq_m, y = bee_abundance)) +
@@ -207,6 +209,15 @@ R3
 parks_bees <- filter(merged_df_pollinators_bees_only, 
        management == "ReducedPark" | management == "ControlPark")
 
+# use Welch two sample t-test to compare the means of abundance
+t.test(bee_abundance ~ management, 
+       data = filter(parks_bees, month == "july"))
+# there is higher bee abundance in reduced management parks in july
+t.test(bee_abundance ~ management, 
+       data = filter(parks_bees, month == "august"))
+# there is higher bee abundance in reduced management parks in august
+
+# explore relationships between local floral abundance and bee abundance
 # fit linear regression for log transformed data
 log_log_abundance_model <- lm(data = parks_bees, 
                               log(bee_abundance) ~ log(flowers_per_sq_m))
@@ -217,6 +228,9 @@ log_log_abundance_mixed_model <- lme4::lmer(data = parks_bees,
                               log(bee_abundance) ~ log(flowers_per_sq_m) + 
                                 (1|management))
 summary(log_log_abundance_mixed_model)
+lme4::ranef(log_log_abundance_mixed_model, condVar = TRUE)
+
+lattice::dotplot(lme4::ranef(log_log_abundance_mixed_model, condVar = TRUE))
 anova(log_log_abundance_mixed_model, log_log_abundance_model)
 # including management as a random effect significantly improves model fit
 
@@ -240,7 +254,7 @@ R4 <- ggplot(parks_bees,
                       labels=c("Control Park", "Treatment Park")) +
   scale_shape_discrete(breaks=c("july", "august"),
                         labels=c("July", "August")) +
-  theme(legend.title=element_blank())
+  theme(legend.title=element_blank()) +
 R4
 
 hist(parks_bees$bee_abundance, main = "", breaks = 100, col = "grey", border = "grey")
