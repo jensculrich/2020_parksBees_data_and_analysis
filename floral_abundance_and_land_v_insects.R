@@ -223,16 +223,24 @@ log_log_abundance_model <- lm(data = parks_bees,
                               log(bee_abundance) ~ log(flowers_per_sq_m))
 summary(log_log_abundance_model)
 
-# fit linear regression for log transformed data w random effect
+# fit linear regression for log transformed data w random interecept
 log_log_abundance_mixed_model <- lme4::lmer(data = parks_bees, 
                               log(bee_abundance) ~ log(flowers_per_sq_m) + 
                                 (1|management))
 summary(log_log_abundance_mixed_model)
 lme4::ranef(log_log_abundance_mixed_model, condVar = TRUE)
-
 lattice::dotplot(lme4::ranef(log_log_abundance_mixed_model, condVar = TRUE))
+
+# fit linear regression for log transformed data w random interecept AND slope
+log_log_abundance_mixed_model_2 <- lme4::lmer(data = parks_bees, 
+                                            log(bee_abundance) ~ log(flowers_per_sq_m) + 
+                                              (log(flowers_per_sq_m)|management))
+summary(log_log_abundance_mixed_model)
+
 anova(log_log_abundance_mixed_model, log_log_abundance_model)
-# including management as a random effect significantly improves model fit
+# including management as a random intercept significantly improves model fit.
+anova(log_log_abundance_mixed_model_2, log_log_abundance_mixed_model)
+# including random slope does not significantly improve the first mixed model.
 
 # plot bee abundance by flowers per sq m as a log log
 R4 <- ggplot(parks_bees, 
