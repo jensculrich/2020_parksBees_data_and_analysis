@@ -223,34 +223,23 @@ log_log_abundance_model <- lm(data = parks_bees,
                               log(bee_abundance) ~ log(flowers_per_sq_m))
 summary(log_log_abundance_model)
 
-# fit linear regression for log transformed data w random interecept
-log_log_abundance_mixed_model <- lme4::lmer(data = parks_bees, 
-                              log(bee_abundance) ~ log(flowers_per_sq_m) + 
-                                (1|management))
-summary(log_log_abundance_mixed_model)
-lme4::ranef(log_log_abundance_mixed_model, condVar = TRUE)
-lattice::dotplot(lme4::ranef(log_log_abundance_mixed_model, condVar = TRUE))
 
-# fit linear regression for log transformed data w random interecept AND slope
-log_log_abundance_mixed_model_2 <- lme4::lmer(data = parks_bees, 
-                                            log(bee_abundance) ~ log(flowers_per_sq_m) + 
-                                              (log(flowers_per_sq_m)|management))
-summary(log_log_abundance_mixed_model)
+log_log_abundance_model_2 <- lm(data = parks_bees, 
+                              log(bee_abundance) ~ log(flowers_per_sq_m) + management)
+summary(log_log_abundance_model_2)
 
-anova(log_log_abundance_mixed_model, log_log_abundance_model)
-# including management as a random intercept significantly improves model fit.
-anova(log_log_abundance_mixed_model_2, log_log_abundance_mixed_model)
-# including random slope does not significantly improve the first mixed model.
+anova(log_log_abundance_model_2, log_log_abundance_model)
+# including management as a fixed effect sign improves the model
 
-# plot bee abundance by flowers per sq m as a log log
+# plot bee abundance by flowers per sq m as a log log with random intercept
 R4 <- ggplot(parks_bees, 
              aes(x = log(flowers_per_sq_m), y = log(bee_abundance))) +
   geom_point(aes(colour = management, shape = month), size = 5) +
   # replot with seperate lm's for management types
-  geom_smooth(data = subset(parks_bees, management == "ReducedPark"), 
-              method = "lm", se = FALSE, color = "#00BFC4") +
-  geom_smooth(data = subset(parks_bees, management == "ControlPark"), 
-              method = "lm", se = FALSE, color = "#F8766D") +
+  geom_smooth(data = parks_bees, 
+              method = "lm", se = FALSE, color = "black") +
+  # geom_smooth(data = subset(parks_bees, management == "ControlPark"), 
+  #           method = "lm", se = FALSE, color = "#F8766D") +
   theme_classic() +
   ylab("log(Bee Abundance)") + xlab(bquote("log(Floral Units / m" ^2~ ")")) +
   theme(axis.text.x = element_text(size = 12)) +
@@ -262,7 +251,7 @@ R4 <- ggplot(parks_bees,
                       labels=c("Control Park", "Treatment Park")) +
   scale_shape_discrete(breaks=c("july", "august"),
                         labels=c("July", "August")) +
-  theme(legend.title=element_blank()) +
+  theme(legend.title=element_blank()) 
 R4
 
 hist(parks_bees$bee_abundance, main = "", breaks = 100, col = "grey", border = "grey")
