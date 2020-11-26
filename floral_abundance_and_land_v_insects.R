@@ -54,7 +54,7 @@ Q2 <- ggplot(filter(merged_df_summarised_2,
   theme_classic() +
   xlab("") + ylab("Flowering Plant Species Richness") +
   scale_x_discrete(breaks=c("ControlPark", "ReducedPark"),
-                   labels=c("Control Park", "Treatment Park")) +
+                   labels=c("Mowed Park", "Semi-naturalized Park")) +
   theme(axis.text.x = element_text(size = 14)) +
   theme(axis.text.y = element_text(size = 12)) + 
   theme(axis.title.y = element_text(size = 14)) +
@@ -92,7 +92,7 @@ P2 <- ggplot(filter(merged_df_summarised_3,
   theme_classic() +
   xlab("") + ylab(bquote("Floral Units / m" ^2)) +
   scale_x_discrete(breaks=c("ControlPark", "ReducedPark"),
-                   labels=c("Control Park", "Treatment Park")) +
+                   labels=c("Mowed Park", "Semi-naturalized Park")) +
   theme(axis.text.x = element_text(size = 14)) +
   theme(axis.text.y = element_text(size = 12)) + 
   theme(axis.title.y = element_text(size = 14)) +
@@ -192,23 +192,22 @@ R2 <- ggplot(filter(merged_df_pollinators_bees_only,
                     management == "ReducedPark" | management == "ControlPark"), 
              aes(x = management, y = bee_abundance, fill = month)) +
   geom_boxplot(aes(fill = forcats::fct_rev(month))) +
-  theme_classic()
+  theme_classic() +
+  xlab("") + ylab("Bee Abundance") +
+  scale_x_discrete(breaks=c("ControlPark", "ReducedPark"),
+                   labels=c("Mowed Park", "Semi-naturalized Park")) +
+  theme(axis.text.x = element_text(size = 12)) +
+  theme(axis.text.y = element_text(size = 12)) + 
+  theme(axis.title.y = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 14)) +
+  scale_fill_discrete(breaks=c("july", "august"),
+                      labels=c("July", "August")) +
+  theme(legend.title=element_blank())
 R2
-
-# plot bee abundance by flowers per sq m
-# retry below (plot R4) as log transformed w and w/out random effects
-R3 <- ggplot(filter(merged_df_pollinators_bees_only, 
-                    management == "ReducedPark" | management == "ControlPark"), 
-             aes(x = flowers_per_sq_m, y = bee_abundance)) +
-  geom_point(aes(colour = management, shape = month), size = 5) +
-  geom_smooth(method = lm, formula = y ~ splines::bs(x, 3)) +
-  theme_classic()
-R3
 
 # filter df for parks only
 parks_bees <- filter(merged_df_pollinators_bees_only, 
-       management == "ReducedPark" | management == "ControlPark")
-
+                     management == "ReducedPark" | management == "ControlPark")
 # use Welch two sample t-test to compare the means of abundance
 t.test(bee_abundance ~ management, 
        data = filter(parks_bees, month == "july"))
@@ -217,21 +216,31 @@ t.test(bee_abundance ~ management,
        data = filter(parks_bees, month == "august"))
 # there is higher bee abundance in reduced management parks in august
 
+
 # explore relationships between local floral abundance and bee abundance
 # fit linear regression for log transformed data
+# null
+null_log_abundance_model <- lm(data = parks_bees, 
+                              log(bee_abundance) ~ 1)
+summary(null_log_abundance_model)
+
+# with log(flower density) as fixed effect
 log_log_abundance_model <- lm(data = parks_bees, 
                               log(bee_abundance) ~ log(flowers_per_sq_m))
 summary(log_log_abundance_model)
+# anova comparison with null model demonstrates that flower density significantly improves the model fit
+anova(log_log_abundance_model, null_log_abundance_model)
 
-
+# with log(flower density) AND management as fixed effect
 log_log_abundance_model_2 <- lm(data = parks_bees, 
                               log(bee_abundance) ~ log(flowers_per_sq_m) + management)
 summary(log_log_abundance_model_2)
 
+# anova comparison with single effect model 
 anova(log_log_abundance_model_2, log_log_abundance_model)
 # including management as a fixed effect sign improves the model
 
-# plot bee abundance by flowers per sq m as a log log with random intercept
+# plot bee abundance by flowers per sq m
 R4 <- ggplot(parks_bees, 
              aes(x = log(flowers_per_sq_m), y = log(bee_abundance))) +
   geom_point(aes(colour = management, shape = month), size = 5) +
@@ -254,28 +263,8 @@ R4 <- ggplot(parks_bees,
   theme(legend.title=element_blank()) 
 R4
 
-hist(parks_bees$bee_abundance, main = "", breaks = 100, col = "grey", border = "grey")
-hist(log(parks_bees$bee_abundance), main = "", breaks = 50, col = "grey", border = "grey")
-abline(v = log(mean(parks_bees$bee_abundance)), col = "red", lwd = 2)   
-abline(v = mean(log(parks_bees$bee_abundance)), col = "blue", lwd = 2)
 
-
-# use Welch two sample t-test to compare the means of abundance
-merged_df_pollinators_bees_only_july <- merged_df_pollinators_bees_only %>% 
-  filter(management == "ControlPark" | management == "ReducedPark") %>%
-  filter(month == "july")  
-  
-  t.test(bee_abundance ~ management, data = merged_df_pollinators_bees_only_july)
-  # there are more bees per site in reduced management parks in july
-
-merged_df_pollinators_bees_only_august <- merged_df_pollinators_bees_only %>% 
-  filter(management == "ControlPark" | management == "ReducedPark") %>%
-  filter(month == "august")  
-  
-  t.test(bee_abundance ~ management, data = merged_df_pollinators_bees_only_august)
-  # there are more bees per site in reduced management parks in august
-
-# repeat with fly data  
+# repeat with syrphid fly data  
 merged_df_pollinators_syrphid_only <- merged_df_pollinators %>%  
   filter(family == "Syrphidae") %>% # filter for bees only
   group_by(index) %>%
@@ -307,6 +296,24 @@ S <- ggplot(merged_df_pollinators_syrphid_only,
                       labels=c("July", "August")) +
   theme(legend.title=element_blank())
 S
+
+# filter for parks only and plot syrphid fly abundance by month|site
+S2 <- ggplot(filter(merged_df_pollinators_syrphid_only, 
+                    management == "ReducedPark" | management == "ControlPark"), 
+             aes(x = management, y = syrphid_abundance, fill = month)) +
+  geom_boxplot(aes(fill = forcats::fct_rev(month))) +
+  theme_classic() +
+  xlab("") + ylab("Syrphid Fly Abundance") +
+  scale_x_discrete(breaks=c("ControlPark", "ReducedPark"),
+                   labels=c("Mowed Park", "Semi-naturalized Park")) +
+  theme(axis.text.x = element_text(size = 12)) +
+  theme(axis.text.y = element_text(size = 12)) + 
+  theme(axis.title.y = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 14)) +
+  scale_fill_discrete(breaks=c("july", "august"),
+                      labels=c("July", "August")) +
+  theme(legend.title=element_blank())
+S2
 
 # calculate overall wasp abundance per month|site
 merged_df_pollinators_wasps_only <- merged_df_pollinators %>%  
@@ -347,4 +354,23 @@ T <- ggplot(merged_df_pollinators_wasps_only,
                       labels=c("July", "August")) +
   theme(legend.title=element_blank())
 T
+
+# filter for parks only and plot wasp fly abundance by month|site
+T2 <- ggplot(filter(merged_df_pollinators_wasps_only, 
+                   management == "ReducedPark" | management == "ControlPark"), 
+            aes(x = management, y = wasp_type_abundance, fill = month)) +
+  geom_boxplot(aes(fill = forcats::fct_rev(month))) +
+  facet_wrap(~is_Vespidae) +
+  theme_classic() +
+  xlab("") + ylab("Wasp Abundance") +
+  scale_x_discrete(breaks=c("ControlPark", "ReducedPark"),
+                   labels=c("Mowed Park", "Semi-naturalized Park")) +
+  theme(axis.text.x = element_text(size = 12)) +
+  theme(axis.text.y = element_text(size = 12)) + 
+  theme(axis.title.y = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 14)) +
+  scale_fill_discrete(breaks=c("july", "august"),
+                      labels=c("July", "August")) +
+  theme(legend.title=element_blank())
+T2
 
