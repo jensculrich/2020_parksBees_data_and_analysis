@@ -187,9 +187,12 @@ R <- ggplot(merged_df_pollinators_bees_only,
   theme(legend.title=element_blank())
 R
 
+# filter df for parks only
+parks_bees <- filter(merged_df_pollinators_bees_only, 
+                     management == "ReducedPark" | management == "ControlPark")
+
 # plot bee abundance by month|site for parks only
-R2 <- ggplot(filter(merged_df_pollinators_bees_only, 
-                    management == "ReducedPark" | management == "ControlPark"), 
+R2 <- ggplot(parks_bees, 
              aes(x = management, y = bee_abundance, fill = month)) +
   geom_boxplot(aes(fill = forcats::fct_rev(month))) +
   theme_classic() +
@@ -205,9 +208,7 @@ R2 <- ggplot(filter(merged_df_pollinators_bees_only,
   theme(legend.title=element_blank())
 R2
 
-# filter df for parks only
-parks_bees <- filter(merged_df_pollinators_bees_only, 
-                     management == "ReducedPark" | management == "ControlPark")
+
 # use Welch two sample t-test to compare the means of abundance
 t.test(bee_abundance ~ management, 
        data = filter(parks_bees, month == "july"))
