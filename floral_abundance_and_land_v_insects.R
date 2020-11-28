@@ -316,6 +316,11 @@ S2 <- ggplot(filter(merged_df_pollinators_syrphid_only,
   theme(legend.title=element_blank())
 S2
 
+t.test(syrphid_abundance ~ management, 
+       data = filter(merged_df_pollinators_syrphid_only, 
+                     month == "august" &
+                     management == "ReducedPark" | management == "ControlPark"))
+
 # calculate overall wasp abundance per month|site
 merged_df_pollinators_wasps_only <- merged_df_pollinators %>%  
   filter(subclade == "not_Anthophila") %>% # filter for non-bee wasps only
@@ -335,6 +340,7 @@ merged_df_pollinators_wasps_only <- merged_df_pollinators %>%
   rename(wasp_type_abundance = n) %>%
   filter(site != "everett_crowley_park") %>%
   filter(site != "china_creek_north_park")
+
 
 # plot wasp fly abundance by month|site
 T <- ggplot(merged_df_pollinators_wasps_only, 
