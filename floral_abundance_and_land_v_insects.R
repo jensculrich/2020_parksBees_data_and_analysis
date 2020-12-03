@@ -1,4 +1,5 @@
 library(tidyverse)
+library(lme4)
 
 # load data
 floral_data <- read.csv("floral_abundances.csv")
@@ -258,11 +259,62 @@ R4 <- ggplot(parks_bees,
   theme(axis.title.y = element_text(size = 14)) +
   theme(legend.text = element_text(size = 14)) +
   scale_colour_discrete(breaks=c("ControlPark", "ReducedPark"),
-                      labels=c("Control Park", "Treatment Park")) +
+                        labels=c("Control Park", "Treatment Park")) +
   scale_shape_discrete(breaks=c("july", "august"),
-                        labels=c("July", "August")) +
+                       labels=c("July", "August")) +
   theme(legend.title=element_blank()) 
 R4
+
+# should add random effect of site to account for site pseudoreplication
+# should change to glm with poisson error distribtion.
+(gm0 <- glm(bee_abundance ~ 1,
+              data = parks_bees, family = poisson))
+
+(gm1 <- glmer(bee_abundance ~ (1 | site),
+              data = parks_bees, family = poisson))
+
+# flowers_per_sq_m is rescaled using log()
+(gm2 <- glmer(bee_abundance ~ log(flowers_per_sq_m) + (1 | site),
+              data = parks_bees, family = poisson))
+
+anova(gm1, gm2)
+
+# is there a way to do this while incorporating the random effect?
+# since there are only 2 points per site, 
+# there would be 20 lines each connecting 2 sites if site considered in the plot
+# create sequence across range of floral unit density (~.3 - 600 / m^2)
+newdat <- data.frame(seq(.3, 600, .1))
+newdat <- newdat %>% 
+  rename(flowers_per_sq_m = seq.0.3..600..0.1.)
+# predict bee abundance values
+prs <- predict(gm0, newdata = newdat, type = "response", se.fit=TRUE)
+newdat$pred <- prs[[1]]
+# calculate 95% confidence interval using se
+newdat$se <- prs[[2]]
+newdat$lo <- newdat$pred - 1.96 * newdat$se 
+newdat$up <- newdat$pred + 1.96 * newdat$se
+
+
+# plot the glm fit (poisson error distribution) (although is not including random intercept)
+R5 <- ggplot(parks_bees, aes(x = log(flowers_per_sq_m), y = bee_abundance)) +
+  geom_point(aes(y = bee_abundance, colour = management, shape = month), 
+             size = 3) +
+  geom_line(data=newdat, aes(log(flowers_per_sq_m), pred)) +
+  geom_line(data=newdat, aes(log(flowers_per_sq_m), lo), linetype = "dashed") +
+  geom_line(data=newdat, aes(log(flowers_per_sq_m), up), linetype = "dashed") +
+  theme_classic() +
+  ylab("Bee Abundance") + xlab(bquote("log(Floral Units / m" ^2~ ")")) +
+  theme(axis.text.x = element_text(size = 12)) +
+  theme(axis.text.y = element_text(size = 12)) + 
+  theme(axis.title.x = element_text(size = 14)) +
+  theme(axis.title.y = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 14)) +
+  scale_colour_discrete(breaks=c("ControlPark", "ReducedPark"),
+                        labels=c("Control Park", "Treatment Park")) +
+  scale_shape_discrete(breaks=c("july", "august"),
+                       labels=c("July", "August")) +
+  theme(legend.title=element_blank()) 
+R5
 
 
 # repeat with syrphid fly data  
