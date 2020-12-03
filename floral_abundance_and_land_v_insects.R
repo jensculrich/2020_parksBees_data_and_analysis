@@ -274,7 +274,7 @@ R4
               data = parks_bees, family = poisson))
 
 # flowers_per_sq_m is rescaled using log()
-(gm2 <- glmer(bee_abundance ~ log(flowers_per_sq_m) + (1 | site),
+summary(gm2 <- glmer(bee_abundance ~ log(flowers_per_sq_m) + (1 | site),
               data = parks_bees, family = poisson))
 
 anova(gm1, gm2)
