@@ -3,6 +3,7 @@
 library(tidyverse)
 library(lme4)
 library(vegan)
+library(proxy)
 
 # load data
 floral_data <- read.csv("floral_abundances.csv")
@@ -120,16 +121,15 @@ bee_diversity_wide <- merged_df_pollinators_bees_only %>%
 
 
 # merge with merged_df_pollinators_bees_only to get management
+# get one row per site with corresponidng management type data
 merged_df_pollinators_bees_only_2 <- merged_df_pollinators_bees_only %>%
-  select(site_abbreviation, management) %>%
-  
+  group_by(site_abbreviation) %>%
+  filter(row_number()==1) %>%
+  select(site_abbreviation, management) 
+# join the management to the diversity by site name
 bee_diversity <- bee_diversity_wide %>%
-  left_join(bee_diversity_wide, 
-            merged_df_pollinators_bees_only_2,
+  left_join(merged_df_pollinators_bees_only_2,
             by = "site_abbreviation") # %>%
-  
-
-  
 View(bee_diversity)
 
 # Species Composition
@@ -137,4 +137,11 @@ View(bee_diversity)
 # Jaccard index of similarity, where the numerator is the number of 
 # species in the set of shared species (present at both sites) and the
 # denominator is the number of species in the set present at either site. 
-proxy::dist(bee_diversity_wide, by_rows = TRUE, method = "Jaccard")
+# summarize by management type first
+bee_diversity_summarized <- bee_diversity %>%
+  group_by(management) %>%
+  summarise_at(vars(2:42), sum, na.rm = TRUE) %>%
+  select(-management)
+# 1 = control, 2 = reduced, 3 = semi-nat, 4 = agr
+dist(bee_diversity_summarized, by_rows = TRUE, method = "Jaccard")
+dist(bee_diversity_summarized, by_rows = TRUE, method = "Euclidean")
