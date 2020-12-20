@@ -103,17 +103,38 @@ merged_df_pollinators_bees_only$species_name <- paste(
 # species_abundance = n Rows within site of each unique species_name
 merged_df_pollinators_bees_only <- merged_df_pollinators_bees_only %>%  
   group_by(site_abbreviation, species_name) %>%
-  mutate(species_abundance = n())
+  mutate(species_abundance = 1) # create a marker for each row that will be tallied later
+
 # wide format, where each species_name is a column containing species_abundance at each site
 bee_diversity_wide <- merged_df_pollinators_bees_only %>%  
-  spread(species_name, species_abundance) %>%  
+  spread(species_name, species_abundance) %>% # spread wide with row per occurrence of each species
   select(-X, -site, -country, -province, -latitude, -longitude, -survey_date,
          -city, -plant_or_pans, -Start.Number, -End.Number, -index, -name,
-         -order, -family, -genus, -species, -sex, -month, -subclade)
-View(bee_diversity_wide)
+         -order, -family, -genus, -species, -sex, -month, -subclade) %>% # drop unneccessary columns
+  replace(., is.na(.), 0) %>% # replace NA with 0
+  # condense to one row per site
+  group_by(site_abbreviation) %>% 
+  summarise_at(vars(6:46), sum, na.rm = TRUE)  %>% # sums tally within species to get species abundance per site
+  filter(site_abbreviation != "china", site_abbreviation != "everett",
+         site_abbreviation != "ubc_f1", site_abbreviation != "ubc_f2")
+
+
+# merge with merged_df_pollinators_bees_only to get management
+merged_df_pollinators_bees_only_2 <- merged_df_pollinators_bees_only %>%
+  select(site_abbreviation, management) %>%
+  
+bee_diversity <- bee_diversity_wide %>%
+  left_join(bee_diversity_wide, 
+            merged_df_pollinators_bees_only_2,
+            by = "site_abbreviation") # %>%
+  
+
+  
+View(bee_diversity)
 
 # Species Composition
 # Dissimilarities and Distances
 # Jaccard index of similarity, where the numerator is the number of 
 # species in the set of shared species (present at both sites) and the
 # denominator is the number of species in the set present at either site. 
+proxy::dist(bee_diversity_wide, by_rows = TRUE, method = "Jaccard")
