@@ -211,10 +211,18 @@ bee_diversity_long <- bee_diversity_sorted %>%
 
 #plot 
 ggplot(bee_diversity_long, aes(x = rank, y = abundance, colour=management)) + 
-  geom_line() + lims(y=c(1,25)) 
+  geom_line() 
 # semi natural top 3 are: Lasioglossum pacatum, and Hylaeus modestus, Melisodes rivalis
 # reduced parks top 3 are: Bombus vosnesenskii, and then a tie between: B. impatiens, B. flavifrons,
       # Halictus rubicundus, and Megachile rotundata.
 # control parks top 3 are: (all tied at 5) Andrena prunorum, Halictus rubicundus, 
       # Lasioglossum brunneiventre.
 # agricultural top 3 are: Agapostemon texanus, Melissodes rivalis, Ceratina acantha
+
+# calculate species richness by management type
+tapply(X=bee_diversity_long$abundance, INDEX=bee_diversity_long$management, 
+       FUN = function(x) {length(x[x>0])} )
+# Species richness increases as the number of individuals in the sample 
+# increases. Therefore, care should be taken in comparing the richness of 
+# two different samples to make sure that they are sufficiently comparable 
+# (here, num. of individuals are NOT comparable across management types so use caution). Rarify?
