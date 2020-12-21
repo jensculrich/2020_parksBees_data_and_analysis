@@ -35,14 +35,7 @@ merged_df_summarised_2 <- merged_df_2 %>%
   # count number of rows to get floral species richness
   add_count() %>%
   # add a more descriptive column name
-  rename(floral_richness = n) %>%
-  # remove these sites until decide what to do with it
-  # everett_crowley and china_creek_north_park
-  # are pollinator gardens, very different from 
-  # a typical park and not necessarily reduced management but 
-  # instead active flowering planting management.
-  filter(site != "everett_crowley_park") %>% 
-  filter(site != "china_creek_north_park")
+  rename(floral_richness = n) 
 
 # calculate sum of all floral units per site per month
 # a value of -1 for number_floral_units represents absent
@@ -89,12 +82,18 @@ merged_df_pollinators_bees_only <- merged_df_pollinators %>%
   add_count() %>%
   # add a more descriptive column name
   rename(bee_abundance = n) %>%
-  # remove this site until decide what to do with it
-  # everett_crowley is a pollinator garden, very different from 
-  # a typical park and not necessarily reduced management but instead
-  # active flowering planting management.
-  filter(site != "everett_crowley_park") %>%
-  filter(site != "china_creek_north_park")
+  # remove these sites until decide what to do with it
+  # everett_crowley and china_creek_north_park
+  # are pollinator gardens, very different from 
+  # a typical park and not necessarily reduced management but 
+  # instead active flowering planting management.
+  filter(site != "everett_crowley_park") %>% 
+  filter(site != "china_creek_north_park") %>% 
+  # remove site only visited once not twice
+  filter(site != "campbell_road") %>%
+  # remove ubc farm sites (organic, small, diverse, surrounded by forest)
+  filter(site != "ubc_farm_hedgerow") %>%
+  filter(site != "campbell_field_margin")
 
 # reshape for diversity analyses
 # mutate, species_name = paste genus and species (so unique name is in one column)
@@ -117,7 +116,8 @@ bee_diversity_wide <- merged_df_pollinators_bees_only %>%
   group_by(site_abbreviation) %>% 
   summarise_at(vars(6:46), sum, na.rm = TRUE)  %>% # sums tally within species to get species abundance per site
   filter(site_abbreviation != "china", site_abbreviation != "everett",
-         site_abbreviation != "ubc_f1", site_abbreviation != "ubc_f2")
+         site_abbreviation != "ubc_f1", site_abbreviation != "ubc_f2", 
+         site_abbreviation != "campbell")
 
 
 # merge with merged_df_pollinators_bees_only to get management
@@ -142,7 +142,7 @@ bee_diversity_summarized <- bee_diversity %>%
   group_by(management) %>%
   summarise_at(vars(2:42), sum, na.rm = TRUE) %>%
   select(-management)
-# 1 = control, 2 = reduced, 3 = semi-nat, 4 = agr
+# 1 = control, 2 = reduced, 3 = agricultural, 4 = semi-natural
 dist(bee_diversity_summarized, by_rows = TRUE, method = "Jaccard")
 # Jaccard distance lowest between park types and highest between 
 # reduced parks and semi-nat/ag
@@ -156,16 +156,18 @@ vegdist(bee_diversity_summarized)
 # bray curtis distance = abs(total difference in species abund between 2 sites), 
 # divided by the total abundances at each site. emphasizes rare and common species more equally.
 # bray-curtiss distance lowest between park types
+# bray-curtiss lowest betwen park types
 
 # could also calculate composition based on relative density, where each 
 # species in a sample is represented by proportion of the sample comprised of
-# that species. For management type, divide each species by sum of all species.
+# that species. Relative abundance prob better since number of sites per category (and thus abundances) are highly variable.
+# For management type, divide each species by sum of all species.
 for(i in 1:4){
   bee_diversity_summarized[i,] <- bee_diversity_summarized[i,] / 
     sum(bee_diversity_summarized[i,])
 }
 
-# 1 = control, 2 = reduced, 3 = semi-nat, 4 = agr
+# 1 = control, 2 = reduced, 3 = agricultural, 4 = semi-natural
 dist(bee_diversity_summarized, by_rows = TRUE, method = "Jaccard")
 # Jaccard distance lowest between park types and highest between 
 # reduced parks and semi-nat/ag
@@ -174,4 +176,45 @@ dist(bee_diversity_summarized, by_rows = TRUE, method = "Euclidean")
 # highest between both park types and agricultural
 vegdist(bee_diversity_summarized)
 # bray-curtiss distance lowest between park types and
-# highest between parks and semi-nat
+# highest between parks and semi-nat, maybe bray 
+# add statistical test for sign of bray-curtiss disimilarity? #
+
+# 1 = control, 2 = reduced, 3 = agricultural, 4 = semi-natural
+mdsE <- metaMDS(bee_diversity_summarized, distance="euc", autotransform=FALSE, trace=0)
+plot(mdsE, display="sites", type="text")
+# non-metric multidimensional scaling distance (bray curtis) between management types 
+mdsB <- metaMDS(bee_diversity_summarized, distance="bray", autotransform=FALSE, trace=0)
+plot(mdsB, display="sites", type="text")
+# warnings caused by low sample sizes (small number of individuals in each species in each management type)
+
+
+#### Diversity ############
+# View(bee_diversity)
+bee_diversity_summarized <- bee_diversity %>%
+  group_by(management) %>%
+  summarise_at(vars(2:42), sum, na.rm = TRUE) %>%
+  select(-management) %>%
+  select(-"Apis mellifera") # removed honey bees for diversity, should I reconsider?
+# View(bee_diversity_summarized)
+# 1 = control, 2 = reduced, 3 = agricultural, 4 = semi-natural
+
+#### Species Richness #####
+# rank abundance
+bee_diversity_sorted <- as.data.frame(apply(bee_diversity_summarized, 1, sort, decreasing=T))
+colnames(bee_diversity_sorted) <- c("control park", "reduced park", "agricultural", "semi-natural")
+# add rank column
+bee_diversity_sorted$rank <- seq.int(nrow(bee_diversity_sorted))
+# long format so each community has rank 1:40 with corresponding abundance
+bee_diversity_long <- bee_diversity_sorted %>%
+  gather(key = "management", value = "abundance",
+         1:4)
+
+#plot 
+ggplot(bee_diversity_long, aes(x = rank, y = abundance, colour=management)) + 
+  geom_line() + lims(y=c(1,25)) 
+# semi natural top 3 are: Lasioglossum pacatum, and Hylaeus modestus, Melisodes rivalis
+# reduced parks top 3 are: Bombus vosnesenskii, and then a tie between: B. impatiens, B. flavifrons,
+      # Halictus rubicundus, and Megachile rotundata.
+# control parks top 3 are: (all tied at 5) Andrena prunorum, Halictus rubicundus, 
+      # Lasioglossum brunneiventre.
+# agricultural top 3 are: Agapostemon texanus, Melissodes rivalis, Ceratina acantha
