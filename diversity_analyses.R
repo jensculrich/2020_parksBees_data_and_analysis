@@ -144,4 +144,34 @@ bee_diversity_summarized <- bee_diversity %>%
   select(-management)
 # 1 = control, 2 = reduced, 3 = semi-nat, 4 = agr
 dist(bee_diversity_summarized, by_rows = TRUE, method = "Jaccard")
+# Jaccard distance lowest between park types and highest between 
+# reduced parks and semi-nat/ag
 dist(bee_diversity_summarized, by_rows = TRUE, method = "Euclidean")
+# euclidean distance = sqrt(X1^2 + X2^2 + X3^2 ... + Xn^2) where Xn equals 
+# the difference in abundance of a species between two sites
+# euclidean distance (squared values) tend to emphasize differences in the most abundant species
+# euclidean distance lowest between control parks and semi-nat and 
+# highest between reduced parks and semi-nat/ag
+vegdist(bee_diversity_summarized)
+# bray curtis distance = abs(total difference in species abund between 2 sites), 
+# divided by the total abundances at each site. emphasizes rare and common species more equally.
+# bray-curtiss distance lowest between park types
+
+# could also calculate composition based on relative density, where each 
+# species in a sample is represented by proportion of the sample comprised of
+# that species. For management type, divide each species by sum of all species.
+for(i in 1:4){
+  bee_diversity_summarized[i,] <- bee_diversity_summarized[i,] / 
+    sum(bee_diversity_summarized[i,])
+}
+
+# 1 = control, 2 = reduced, 3 = semi-nat, 4 = agr
+dist(bee_diversity_summarized, by_rows = TRUE, method = "Jaccard")
+# Jaccard distance lowest between park types and highest between 
+# reduced parks and semi-nat/ag
+dist(bee_diversity_summarized, by_rows = TRUE, method = "Euclidean")
+# euclidean distance lowest between park types and 
+# highest between both park types and agricultural
+vegdist(bee_diversity_summarized)
+# bray-curtiss distance lowest between park types and
+# highest between parks and semi-nat
