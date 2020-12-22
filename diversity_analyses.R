@@ -226,3 +226,47 @@ tapply(X=bee_diversity_long$abundance, INDEX=bee_diversity_long$management,
 # increases. Therefore, care should be taken in comparing the richness of 
 # two different samples to make sure that they are sufficiently comparable 
 # (here, num. of individuals are NOT comparable across management types so use caution). Rarify?
+
+# Shannon-Weiner diversity
+shannon <- function(n) { 
+  n <- n[n>0] # remove zero values
+  p <- n/sum(n) # calculate proportion of each species
+  -1 * sum( p*log(p) ) # sum (proportions * log proportions) 
+}
+tapply(X=bee_diversity_long$abundance, INDEX=bee_diversity_long$management, 
+       FUN = shannon)
+
+# Simpson dominance (D) = sum(p^2)
+# varies between 1 for a single species and declines toward zero with increasing numbers of species
+# Simpson diversity index (1 - D)
+# i.e. the probability that two randomly selected individuals belong to different species.
+Sc <- function(x) {
+  p <- x/sum(x)
+  1 - sum(p^2)
+}
+tapply(X=bee_diversity_long$abundance, INDEX=bee_diversity_long$management, 
+       FUN = Sc)
+# Simpson inverse dominance index (1/D)
+# This value could be considered the ‘effective’ number of species, which discounts the rarest species
+Si <- function(x) {
+  p <- x/sum(x)
+  1/sum(p^2)
+}
+tapply(X=bee_diversity_long$abundance, INDEX=bee_diversity_long$management, 
+       FUN = Si)
+
+# Diversity index summaries
+dfg <- group_by(bee_diversity_long, management) # group by community
+dfg <- select(dfg, -rank)
+
+# calculate indices for each community type.
+summarize(dfg,
+          richness = length( abundance[abundance>0]),
+          H = shannon(abundance),
+          Sc = Sc(abundance),
+          Si = Si(abundance)
+)
+# the communities have relatively similar diversity. 
+# statistical test to compare?
+
+############ Rarified Species Richness and Total Richness
