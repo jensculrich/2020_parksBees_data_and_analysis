@@ -129,7 +129,9 @@ merged_df_pollinators_bees_only_2 <- merged_df_pollinators_bees_only %>%
 # join the management to the diversity by site name
 bee_diversity <- bee_diversity_wide %>%
   left_join(merged_df_pollinators_bees_only_2,
-            by = "site_abbreviation") # %>%
+            by = "site_abbreviation") %>%
+  select(-"Apis mellifera") # removed honey bees for diversity, should I reconsider?
+
 View(bee_diversity)
 
 # Species Composition
@@ -188,14 +190,16 @@ plot(mdsB, display="sites", type="text")
 # warnings caused by low sample sizes (small number of individuals in each species in each management type)
 
 
+
 #### Diversity ############
+bee_diversity <- bee_diversity %>%
+  select(-"Apis mellifera") # removed honey bees for diversity, should I reconsider?
+
 # View(bee_diversity)
 bee_diversity_summarized <- bee_diversity %>%
   group_by(management) %>%
   summarise_at(vars(2:42), sum, na.rm = TRUE) %>%
-  select(-management) %>%
-  select(-"Apis mellifera") # removed honey bees for diversity, should I reconsider?
-# View(bee_diversity_summarized)
+  select(-management) # View(bee_diversity_summarized)
 # 1 = control, 2 = reduced, 3 = agricultural, 4 = semi-natural
 
 #### Species Richness #####
@@ -269,4 +273,79 @@ summarize(dfg,
 # the communities have relatively similar diversity. 
 # statistical test to compare?
 
-############ Rarified Species Richness and Total Richness
+############ Estimate Total Richness (Species Accum) and Compare Rarified Diversity
+N <- colSums(bee_diversity[,2:41]) 
+N <- N[N>0]
+sum(N>0) # observed species richness for all sites in July/August = 40
+
+estimateR(N) # use abundance-based coverage estimators, ACE and Chao 1, for total sr
+# total species richness estimated at ~49 species.
+
+# use a frequency-based estimator, Chao 2, where the data only need to 
+# be presence/absence, and for which we also need multiple sample plots. 
+# By using multiple plots, we get some idea of of how rare some species 
+# are and use that to estimate how many more rare species there might be 
+# which are unsampled.
+(chaoF <- specpool(bee_diversity[,2:41])) # ~51.5 total species
+# We also get a jackknifed estimate. All of these give some estimate 
+# of minimum true number of species in an area around our samples.
+
+# estimate species accumulation asymptote using lomolino model
+# and plot species accumulation curve
+sp1 <- specaccum(bee_diversity[,2:41])
+sp2 <- specaccum(bee_diversity[,2:41], "random")
+sp2
+summary(sp2)
+plot(sp1, ci.type="poly", col="blue", lwd=2, ci.lty=0, ci.col="lightblue")
+boxplot(sp2, col="yellow", add=TRUE, pch="+")
+## Fit Lomolino model to the exact accumulation
+mod1 <- fitspecaccum(sp1, "lomolino")
+# The Lomolino model (SSlomolino) is Asym/(1 + slope^log(xmid/area)) (Lomolino 2000, Dengler 2009). 
+# Parameter Asym is the asymptotic maximum number of species, 
+# slope is the maximum slope of increase of richness, and 
+# xmid is the area where half of the maximum richness is achieved.
+coef(mod1) # this should be closer to the frequency based Chao 2 estimator since 
+# speaccum method is based on sampling SITES without replacement (not individuals).
+fitted(mod1)
+plot(sp1)
+## Add Lomolino model using argument 'add'
+plot(mod1, add = TRUE, col=2, lwd=2)
+
+## Fit Arrhenius model to the exact accumulation
+mod2 <- fitspecaccum(sp1, "arrhenius")
+# The Arrhenius model (SSarrhenius) is the expression k*area^z. This is the 
+# most classical model that can be found in any textbook of ecology (and also 
+# in Dengler 2009). Parameter z is the steepness of the species-area curve, 
+# and k is the expected number of species in a unit area.
+# as x approaches inf, y approach inf (no limit)
+coef(mod2)
+fitted(mod2)
+plot(sp1)
+## Add Lomolino model using argument 'add'
+plot(mod2, add = TRUE, col=2, lwd=2)
+
+
+## Fit Arrhenius models to all random accumulations
+mods <- fitspecaccum(sp2, "arrh")
+plot(mods, col="hotpink")
+boxplot(sp2, col = "yellow", border = "blue", lty=1, cex=0.3, add= TRUE)
+## Use nls() methods to the list of models
+sapply(mods$models, AIC)
+
+spAbund <- rowSums(bee_diversity[,2:41])  #gives the number of individuals found in each plot
+spAbund # view observations per plot 
+
+raremin <- min(rowSums(bee_diversity[,2:41])) # rarefaction uses the smallest number of observations per sample to 
+# extrapolate the expected number if all other samples only had that number of observations
+raremin # view smallest # of obs (Clark Park and QE North)
+# only one species at the lowest site so it won't really work to compare 
+# individual based rarefied div unless minmum species is >2.
+
+sRare <- rarefy(bee_diversity[,2:41], raremin) # now use function rarefy
+sRare #gives an "expected"rarefied" number of species (not obs) if only 1 individuals were present
+
+rarecurve(bee_diversity[,2:41], col = "blue")
+
+
+
+
