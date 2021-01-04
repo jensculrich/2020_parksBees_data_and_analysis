@@ -232,6 +232,9 @@ tapply(X=bee_diversity_long$abundance, INDEX=bee_diversity_long$management,
 # (here, num. of individuals are NOT comparable across management types so use caution). Rarify?
 
 # Shannon-Weiner diversity
+# if there are many individuals of many different species, then it would be very
+# difficult to describe in a simple way, and difficult to predict what a sample 
+# would look like–disorder, or entropy, would be high.
 shannon <- function(n) { 
   n <- n[n>0] # remove zero values
   p <- n/sum(n) # calculate proportion of each species
@@ -332,20 +335,56 @@ boxplot(sp2, col = "yellow", border = "blue", lty=1, cex=0.3, add= TRUE)
 ## Use nls() methods to the list of models
 sapply(mods$models, AIC)
 
-spAbund <- rowSums(bee_diversity[,2:41])  #gives the number of individuals found in each plot
+##### Rarefied species diversity
+# 1 = control, 2 = reduced, 3 = agricultural, 4 = semi-natural
+spAbund <- rowSums(bee_diversity_summarized)  #gives the number of individuals found in each plot
 spAbund # view observations per plot 
 
-raremin <- min(rowSums(bee_diversity[,2:41])) # rarefaction uses the smallest number of observations per sample to 
+raremin <- min(rowSums(bee_diversity_summarized)) # rarefaction uses the smallest number of observations per sample to 
 # extrapolate the expected number if all other samples only had that number of observations
-raremin # view smallest # of obs (Clark Park and QE North)
+raremin # view smallest # of obs ()
 # only one species at the lowest site so it won't really work to compare 
 # individual based rarefied div unless minmum species is >2.
 
-sRare <- rarefy(bee_diversity[,2:41], raremin) # now use function rarefy
+sRare <- rarefy(bee_diversity_summarized, raremin) # now use function rarefy
 sRare #gives an "expected"rarefied" number of species (not obs) if only 1 individuals were present
 
-rarecurve(bee_diversity[,2:41], col = "blue")
+rarecurve(bee_diversity_summarized, col = "blue")
+
+##### repeat with parks only
+bee_diversity_summarized_parks <- rbind(bee_diversity_summarized[1:2,])
+# 1 = control, 2 = reduced
+spAbund <- rowSums(bee_diversity_summarized_parks)  #gives the number of individuals found in each plot
+spAbund # view observations per plot 
+
+raremin <- min(rowSums(bee_diversity_summarized_parks)) # rarefaction uses the smallest number of observations per sample to 
+# extrapolate the expected number if all other samples only had that number of observations
+raremin # view smallest # of obs ()
+# only one species at the lowest site so it won't really work to compare 
+# individual based rarefied div unless minmum species is >2.
+
+sRare <- rarefy(bee_diversity_summarized_parks, raremin) # now use function rarefy
+sRare #gives an "expected"rarefied" number of species (not obs) if only 1 individuals were present
+
+rarecurve(bee_diversity_summarized_parks, col = "blue")
 
 
+############# Distributions
+# fit the distributions
+N <- rev(sort(colSums(bee_diversity_summarized)))
+# get the expected ranks for the log series distribution
+# standard exponential integral
+sei <- function(t = 1) exp(-t)/t
+alpha <- optimal.theta(N)
+Nt <- sum(N)
+rank.logseries <- sapply(N, function(x) {
+  n <- x * log(1 + alpha/Nt )
+  f <- integrate(sei, n, Inf)
+  fv <- f[["value"]]
+  alpha * fv } )
 
+mod <- radfit(N)
+par(mar=c(5,4,1,1))
+plot(mod) 
+lines(rank.logseries, N, lty=2)
 
